@@ -1,1 +1,10 @@
 *.mp4
+*.vtt
+
+whisper/assets
+
+*/__pycache__
+*DS_Store
+
+mlx-large
+q-mlx-large

@@ -2,12 +2,22 @@ from deep_translator import GoogleTranslator
 from subprocess import run
 
 import argparse
+import os
+from pprint import pprint
+
 import whisper
 
 def argparser():
     parser = argparse.ArgumentParser(description="LoRA or QLoRA finetuning.")
     parser.add_argument(
+        "--model",
+        default="mlx-large",
+        type=str,
+        help="Path the the Whisper mlx model weights",
+    )
+    parser.add_argument(
         "--file",
+        required=True,
         type=str,
         help="The file to generate subtitles on",
     )
@@ -20,37 +30,48 @@ def argparser():
     parser.add_argument(
         "--output-language",
         type=str,
-        default="en",
+        default="nl",
         help="The language of the subtitles",
     )
-    parser.add_argument("--seed", type=int, default=0, help="The PRNG seed")
+
     return parser
 
+
+def formatTime(time):
+    return
+
+
 class Subber:
-    def __init__(self, file, inputLanguage, outputLanguage):
+    def __init__(self, model, file, inputLanguage, outputLanguage):
+        self.model = model
         self.inputFilePath = file
         self.inputLanguage = inputLanguage
         self.outputLanguage = outputLanguage
+        self.subtitlePath = f"{self.outputLanguage}_{self.inputFilePath}.vtt"
 
     def _transcribe(self):
         print("Transcribing.")
-        self.transcription = whisper.transcribe(self.inputFilePath, word_timestamps=True)
+        self.transcription = whisper.transcribe(self.inputFilePath, path_or_hf_repo=self.model)
 
     def _translate(self):
         print("Translating.")
-        self.translatedSubs = {}
+        self.translatedSubs = []
         for part in self.transcription["segments"]:
-            translated = GoogleTranslator(source=self.inputFilePath, target=self.outputLanguage).translate(part["words"])
-            self.translatedSubs["time"] = part["time"]
-            self.translatedSubs["words"] = translated
+            translated = GoogleTranslator(source=self.inputLanguage, target=self.outputLanguage).translate(part["text"])
+            translatedPart = {}
+            translatedPart["start"] = part["start"]
+            translatedPart["end"] = part["end"]
+            translatedPart["words"] = translated
+            self.translatedSubs.append(part)
 
     def _create_subtitles(self):
-        # TODO
-        self.subtitlePath = f"{self.inputFilePath}.vtt"
         with open(self.subtitlePath, "w+") as f:
-            f.write()
-            f.write()
-            f.write("\n")
+            for part in self.translatedSubs:
+                start = part['start']
+                end = part['end']
+                text = part['text']
+                f.write(f"{start} --> {end}\n")
+                f.write(f"{text}\n")
 
     def _burnSubtitles(self):
         print("Burning subtitles.")
@@ -61,15 +82,19 @@ class Subber:
         )
 
     def run(self):
-        self._transcribe()
-        self._translate()
-        self._create_subtitles()
-        self._burnSubtitles()
+        if not os.path.exists(self.subtitlePath):
+            self._transcribe()
+            self._translate()
+            self._create_subtitles()
+        else:
+            print("Subtitle file found.")
+        # self._burnSubtitles()
 
 
 if __name__ == "__main__":
     parser = argparser()
     args = parser.parse_args()
 
-    s = Subber(args.file, args.language)
+    s = Subber(args.model, args.file, args.input_language, args.output_language)
     s.run()
+    pprint(s.transcription)
