@@ -1,9 +1,8 @@
 from deep_translator import GoogleTranslator
-from subprocess import run
 
 import argparse
+import subprocess
 import os
-from pprint import pprint
 
 import whisper
 
@@ -37,8 +36,16 @@ def argparser():
     return parser
 
 
+# Formats a floating point number into HH:MM:SS,MS format used for srt files.
 def formatTime(time):
-    return
+    h = int(time // 3600)
+    m = int((time % 3600) // 60)
+    s = int(time % 60)
+    ms = int((time - int(time)) * 1000)
+
+    formatted = "{:02d}:{:02d}:{:02d},{:03d}".format(h, m, s, ms)
+
+    return formatted
 
 
 class Subber:
@@ -47,7 +54,7 @@ class Subber:
         self.inputFilePath = file
         self.inputLanguage = inputLanguage
         self.outputLanguage = outputLanguage
-        self.subtitlePath = f"{self.outputLanguage}_{self.inputFilePath}.vtt"
+        self.subtitlePath = f"{self.outputLanguage}_{self.inputFilePath}.srt"
 
     def _transcribe(self):
         print("Transcribing.")
@@ -57,28 +64,41 @@ class Subber:
         print("Translating.")
         self.translatedSubs = []
         for part in self.transcription["segments"]:
-            translated = GoogleTranslator(source=self.inputLanguage, target=self.outputLanguage).translate(part["text"])
             translatedPart = {}
             translatedPart["start"] = part["start"]
             translatedPart["end"] = part["end"]
-            translatedPart["words"] = translated
-            self.translatedSubs.append(part)
+            translatedPart["text"] = GoogleTranslator(source=self.inputLanguage, target=self.outputLanguage).translate(part["text"])
+            self.translatedSubs.append(translatedPart)
 
     def _create_subtitles(self):
         with open(self.subtitlePath, "w+") as f:
-            for part in self.translatedSubs:
-                start = part['start']
-                end = part['end']
+            for i, part in enumerate(self.translatedSubs):
+                start = formatTime(part['start'])
+                end = formatTime(part['end'])
                 text = part['text']
-                f.write(f"{start} --> {end}\n")
-                f.write(f"{text}\n")
+                f.write(f"{i}\n{start} --> {end}\n")
+                f.write(f"{text}\n\n")
 
     def _burnSubtitles(self):
         print("Burning subtitles.")
         style = "Fontname=Roboto,OutlineColour=&H40000000,BorderStyle=3,ScaleY=0.87, ScaleX=0.87,Fontsize=15"
-        # TODO: check args
-        process_result = run(
-
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-i",
+                self.inputFilePath,
+                "-vf",
+                f"subtitles='{self.subtitlePath}':force_style='{style}'",
+                "-c:v",
+                "libx264",
+                "-crf",
+                "18",
+                "-c:a",
+                "copy",
+                f"{self.outputLanguage}_{self.inputFilePath}",
+            ],
+            stdout = subprocess.DEVNULL,
+            stderr = subprocess.DEVNULL
         )
 
     def run(self):
@@ -88,7 +108,7 @@ class Subber:
             self._create_subtitles()
         else:
             print("Subtitle file found.")
-        # self._burnSubtitles()
+        self._burnSubtitles()
 
 
 if __name__ == "__main__":
@@ -97,4 +117,3 @@ if __name__ == "__main__":
 
     s = Subber(args.model, args.file, args.input_language, args.output_language)
     s.run()
-    pprint(s.transcription)
