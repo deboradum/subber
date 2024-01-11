@@ -61,12 +61,13 @@ class Subber:
         self.transcription = whisper.transcribe(self.inputFilePath, path_or_hf_repo=self.model)
 
     def _translate(self):
-        print("Translating.")
         # Need to test fully
         # If no translation is needed
         if not self.outputLanguage:
             self.translatedSubs = self.transcription["segments"]
+            self.subtitlePath = f"{self.inputLanguage}_{self.inputFilePath}.srt"
             return
+        print("Translating.")
         self.translatedSubs = []
         for part in self.transcription["segments"]:
             translatedPart = {}
