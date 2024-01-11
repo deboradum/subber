@@ -29,8 +29,8 @@ def argparser():
     parser.add_argument(
         "--output-language",
         type=str,
-        default="nl",
-        help="The language of the subtitles",
+        default=None,
+        help="The language of the subtitles. None if the subtitles should not be translated",
     )
 
     return parser
@@ -62,6 +62,11 @@ class Subber:
 
     def _translate(self):
         print("Translating.")
+        # Need to test fully
+        # If no translation is needed
+        if not self.outputLanguage:
+            self.translatedSubs = self.transcription["segments"]
+            return
         self.translatedSubs = []
         for part in self.transcription["segments"]:
             translatedPart = {}
