@@ -1,5 +1,7 @@
 *.mp4
+*.mkv
 *.srt
+*.txt
 
 whisper/assets
 
@@ -8,3 +10,5 @@ whisper/assets
 
 mlx-large
 q-mlx-large
+q-mlx-medium
+q-mlx-small
