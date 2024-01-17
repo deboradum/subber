@@ -1,6 +1,7 @@
 from deep_translator import GoogleTranslator
 
 import argparse
+import json
 import subprocess
 import os
 
@@ -57,8 +58,15 @@ class Subber:
         self.subtitlePath = f"{self.outputLanguage}_{self.inputFilePath}.srt"
 
     def _transcribe(self):
+        if os.path.exists(f"{self.inputFilePath}_transcription.txt"):
+            print("Transcription file found.")
+            with open(f"{self.inputFilePath}_transcription.txt", "r") as f:
+                self.transcription = json.load(f)
+            return
         print("Transcribing.")
         self.transcription = whisper.transcribe(self.inputFilePath, path_or_hf_repo=self.model)
+        with open(f"{self.inputFilePath}_transcription.txt", "w+") as f:
+            json.dump(self.transcription, f)
 
     def _translate(self):
         # Need to test fully
