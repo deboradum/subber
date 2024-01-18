@@ -33,6 +33,11 @@ def argparser():
         default=None,
         help="The language of the subtitles. None if the subtitles should not be translated",
     )
+    parser.add_argument(
+        "--burn",
+        action='store_true',
+        help="Burn the subtitles in the video."
+    )
 
     return parser
 
@@ -115,14 +120,15 @@ class Subber:
             stderr = subprocess.DEVNULL
         )
 
-    def run(self):
+    def run(self, burn):
         if not os.path.exists(self.subtitlePath):
             self._transcribe()
             self._translate()
             self._create_subtitles()
         else:
             print("Subtitle file found.")
-        self._burnSubtitles()
+        if burn:
+            self._burnSubtitles()
 
 
 if __name__ == "__main__":
@@ -130,4 +136,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     s = Subber(args.model, args.file, args.input_language, args.output_language)
-    s.run()
+    s.run(args.burn)
