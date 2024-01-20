@@ -80,7 +80,6 @@ class Subber:
             json.dump(self.transcription, f)
 
     def _translate(self):
-        # Need to test fully
         # If no translation is needed
         if not self.outputLanguage:
             self.translatedSubs = self.transcription["segments"]
