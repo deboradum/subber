@@ -38,6 +38,12 @@ def argparser():
         action='store_true',
         help="Burn the subtitles in the video."
     )
+    parser.add_argument(
+        "--out",
+        type=str,
+        default=None,
+        help="The name of the burned output video"
+    )
 
     return parser
 
@@ -98,7 +104,7 @@ class Subber:
                 f.write(f"{i}\n{start} --> {end}\n")
                 f.write(f"{text}\n\n")
 
-    def _burnSubtitles(self):
+    def _burnSubtitles(self, output_video):
         print("Burning subtitles.")
         style = "Fontname=Roboto,OutlineColour=&H40000000,BorderStyle=3,ScaleY=0.87, ScaleX=0.87,Fontsize=15"
         subprocess.run(
@@ -114,13 +120,13 @@ class Subber:
                 "18",
                 "-c:a",
                 "copy",
-                f"{self.outputLanguage}_{self.inputFilePath}",
+                output_video if output_video else f"{self.outputLanguage}_{self.inputFilePath}",
             ],
             stdout = subprocess.DEVNULL,
             stderr = subprocess.DEVNULL
         )
 
-    def run(self, burn):
+    def run(self, burn, output_video):
         if not os.path.exists(self.subtitlePath):
             self._transcribe()
             self._translate()
@@ -128,7 +134,7 @@ class Subber:
         else:
             print("Subtitle file found.")
         if burn:
-            self._burnSubtitles()
+            self._burnSubtitles(output_video)
 
 
 if __name__ == "__main__":
@@ -136,4 +142,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     s = Subber(args.model, args.file, args.input_language, args.output_language)
-    s.run(args.burn)
+    s.run(args.burn, args.out)
