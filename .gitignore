@@ -2,6 +2,7 @@
 *.mkv
 *.srt
 *.txt
+*.url
 
 whisper/assets
 
