@@ -66,7 +66,7 @@ class Subber:
         self.inputFilePath = file
         self.inputLanguage = inputLanguage
         self.outputLanguage = outputLanguage
-        self.subtitlePath = f"{self.outputLanguage}_{self.inputFilePath}.srt"
+        self.subtitlePath = f"{self.inputFilePath}_en.srt"
 
     def _transcribe(self):
         if os.path.exists(f"{self.inputFilePath}_transcription.txt"):
