@@ -107,17 +107,22 @@ class Subber:
 
         for part in self.transcription["segments"]:
             text = part["text"]
+
+            # Run t5 inference.
             prompt = f"translate from {self.inputLanguage} to {self.outputLanguage}: {text}"
+            tokens = []
             for token, n_tokens in zip(
                 t5.generate(prompt, model, tokenizer, 0.0), range(200)
             ):
                 if token.item() == tokenizer.eos_id:
                     break
-                print(
-                    tokenizer.decode([token.item()], with_sep=n_tokens > 0),
-                    end="",
-                    flush=True,
-                )
+            tokens.append(token.item())
+
+            translatedPart = {}
+            translatedPart["start"] = part["start"]
+            translatedPart["end"] = part["end"]
+            translatedPart["text"] = tokenizer.decode(tokens)
+            self.translatedSubs.append(translatedPart)
 
     def _create_subtitles(self):
         with open(self.subtitlePath, "w+") as f:
