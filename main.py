@@ -6,6 +6,7 @@ import subprocess
 import os
 
 import whisper
+import t5
 
 def argparser():
     parser = argparse.ArgumentParser(description="LoRA or QLoRA finetuning.")
@@ -61,11 +62,11 @@ def formatTime(time):
 
 
 class Subber:
-    def __init__(self, model, file, inputLanguage, outputLanguage):
-        self.model = model
-        self.inputFilePath = file
-        self.inputLanguage = inputLanguage
-        self.outputLanguage = outputLanguage
+    def __init__(self):
+        self.model = args.model
+        self.inputFilePath = args.file
+        self.inputLanguage = args.input_language
+        self.outputLanguage = args.output_language
         self.subtitlePath = f"{self.inputFilePath}_en.srt"
 
     def _transcribe(self):
@@ -86,6 +87,12 @@ class Subber:
             self.subtitlePath = f"{self.inputLanguage}_{self.inputFilePath}.srt"
             return
         print("Translating.")
+        if args.local_translate:
+            self._translate_local()
+        else:
+            self._translate_google()
+
+    def _translate_google(self):
         self.translatedSubs = []
         for part in self.transcription["segments"]:
             translatedPart = {}
@@ -93,6 +100,24 @@ class Subber:
             translatedPart["end"] = part["end"]
             translatedPart["text"] = GoogleTranslator(source=self.inputLanguage, target=self.outputLanguage).translate(part["text"])
             self.translatedSubs.append(translatedPart)
+
+    def _translate_local(self):
+        self.translatedSubs = []
+        model, tokenizer = t5.load_model(args.model, args.dtype)
+
+        for part in self.transcription["segments"]:
+            text = part["text"]
+            prompt = f"translate from {self.inputLanguage} to {self.outputLanguage}: {text}"
+            for token, n_tokens in zip(
+                t5.generate(prompt, model, tokenizer, 0.0), range(200)
+            ):
+                if token.item() == tokenizer.eos_id:
+                    break
+                print(
+                    tokenizer.decode([token.item()], with_sep=n_tokens > 0),
+                    end="",
+                    flush=True,
+                )
 
     def _create_subtitles(self):
         with open(self.subtitlePath, "w+") as f:
@@ -125,20 +150,20 @@ class Subber:
             stderr = subprocess.DEVNULL
         )
 
-    def run(self, burn, output_video):
+    def run(self):
         if not os.path.exists(self.subtitlePath):
             self._transcribe()
             self._translate()
             self._create_subtitles()
         else:
             print("Subtitle file found.")
-        if burn:
-            self._burnSubtitles(output_video)
+        if args.burn:
+            self._burnSubtitles(args.out)
 
+
+parser = argparser()
+args = parser.parse_args()
 
 if __name__ == "__main__":
-    parser = argparser()
-    args = parser.parse_args()
-
-    s = Subber(args.model, args.file, args.input_language, args.output_language)
-    s.run(args.burn, args.out)
+    s = Subber()
+    s.run()
