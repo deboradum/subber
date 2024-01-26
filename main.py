@@ -35,6 +35,11 @@ def argparser():
         help="The language of the subtitles. None if the subtitles should not be translated",
     )
     parser.add_argument(
+        "--local-translate",
+        action='store_true',
+        help="Translate locally using Google's FAN-T5",
+    )
+    parser.add_argument(
         "--burn",
         action='store_true',
         help="Burn the subtitles in the video."
