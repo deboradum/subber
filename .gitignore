@@ -9,7 +9,7 @@ whisper/assets
 */__pycache__
 *DS_Store
 
-mlx-large
-q-mlx-large
-q-mlx-medium
-q-mlx-small
+whisper-mlx-large
+whisper-q-mlx-large
+whisper-q-mlx-medium
+whisper-q-mlx-small
