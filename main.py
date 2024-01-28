@@ -6,15 +6,27 @@ import subprocess
 import os
 
 import whisper
-import t5
+from t5 import t5
+
+language_map = {
+    "ja": "Japanese",
+    "en": "English",
+    "nl": "Dutch",
+}
 
 def argparser():
     parser = argparse.ArgumentParser(description="LoRA or QLoRA finetuning.")
     parser.add_argument(
-        "--model",
-        default="mlx-large",
+        "--w-model",
+        default="whisper-q-mlx-large",
         type=str,
         help="Path the the Whisper mlx model weights",
+    )
+    parser.add_argument(
+        "--t-model",
+        default="t5-large",
+        type=str,
+        help="Path the the FLAN-T5 mlx model weights",
     )
     parser.add_argument(
         "--file",
@@ -68,28 +80,31 @@ def formatTime(time):
 
 class Subber:
     def __init__(self):
-        self.model = args.model
+        self.w_model = args.w_model
+        self.t5_model = args.t_model
         self.inputFilePath = args.file
         self.inputLanguage = args.input_language
         self.outputLanguage = args.output_language
-        self.subtitlePath = f"{self.inputFilePath}_en.srt"
+
+        self.subtitlePath = f"{self.inputFilePath}_{self.outputLanguage}.srt"
+        self.transcriptPath = f"{self.inputFilePath}_transcription.txt"
 
     def _transcribe(self):
-        if os.path.exists(f"{self.inputFilePath}_transcription.txt"):
+        if os.path.exists(self.transcriptPath):
             print("Transcription file found.")
-            with open(f"{self.inputFilePath}_transcription.txt", "r") as f:
+            with open(self.transcriptPath, "r") as f:
                 self.transcription = json.load(f)
             return
         print("Transcribing.")
-        self.transcription = whisper.transcribe(self.inputFilePath, path_or_hf_repo=self.model)
-        with open(f"{self.inputFilePath}_transcription.txt", "w+") as f:
+        self.transcription = whisper.transcribe(self.inputFilePath, path_or_hf_repo=self.w_model)
+        with open(self.transcriptPath, "w+") as f:
             json.dump(self.transcription, f)
 
     def _translate(self):
-        # If no translation is needed
+        # If only subbing and no translation is needed
         if not self.outputLanguage:
             self.translatedSubs = self.transcription["segments"]
-            self.subtitlePath = f"{self.inputLanguage}_{self.inputFilePath}.srt"
+            self.subtitlePath = f"{self.inputFilePath}_{self.inputLanguage}.srt"
             return
         print("Translating.")
         if args.local_translate:
@@ -97,6 +112,7 @@ class Subber:
         else:
             self._translate_google()
 
+    # Translating using Google Translate api.
     def _translate_google(self):
         self.translatedSubs = []
         for part in self.transcription["segments"]:
@@ -106,22 +122,31 @@ class Subber:
             translatedPart["text"] = GoogleTranslator(source=self.inputLanguage, target=self.outputLanguage).translate(part["text"])
             self.translatedSubs.append(translatedPart)
 
+    # Translating using a local FAN-T5 model.
     def _translate_local(self):
         self.translatedSubs = []
-        model, tokenizer = t5.load_model(args.model, args.dtype)
+        model, tokenizer = t5.load_model(self.t5_model, "bfloat16")
 
+        inp_lang = language_map[self.inputLanguage]
+        outp_lang = language_map[self.outputLanguage]
         for part in self.transcription["segments"]:
             text = part["text"]
 
             # Run t5 inference.
-            prompt = f"translate from {self.inputLanguage} to {self.outputLanguage}: {text}"
+            prompt = f"translate from {inp_lang} to {outp_lang}: {text}"
+            print("\n", prompt)
             tokens = []
             for token, n_tokens in zip(
                 t5.generate(prompt, model, tokenizer, 0.0), range(200)
             ):
                 if token.item() == tokenizer.eos_id:
                     break
-            tokens.append(token.item())
+                print(
+                    tokenizer.decode([token.item()], with_sep=n_tokens > 0),
+                    end="",
+                    flush=True,
+                )
+                tokens.append(token.item())
 
             translatedPart = {}
             translatedPart["start"] = part["start"]

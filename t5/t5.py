@@ -330,10 +330,10 @@ class T5(nn.Module):
 
 
 class Tokenizer:
-    def __init__(self, config: T5Config):
+    def __init__(self, config: T5Config, model_name: str):
         self._decoder_start_id = config.decoder_start_token_id
         self._tokenizer = AutoTokenizer.from_pretrained(
-            args.model,
+            model_name,
             legacy=False,
             model_max_length=getattr(config, "n_positions", 512),
         )
@@ -379,7 +379,7 @@ def generate(prompt: str, model: T5, tokenizer: Tokenizer, temp: Optional[float]
 
 
 def load_model(model_name: str, dtype: str = "float16"):
-    config = T5Config.from_pretrained(args.model)
+    config = T5Config.from_pretrained(model_name)
     dtype = getattr(mx, dtype)
     model = T5(config)
     file_name = model_name.replace("/", "-")
@@ -388,7 +388,7 @@ def load_model(model_name: str, dtype: str = "float16"):
     weights = tree_map(lambda p: p.astype(dtype), weights)
     model.update(weights)
     mx.eval(model.parameters())
-    return model, Tokenizer(config)
+    return model, Tokenizer(config, model_name)
 
 
 if __name__ == "__main__":
@@ -397,7 +397,7 @@ if __name__ == "__main__":
         "--model",
         type=str,
         help="Name of the T5 model.",
-        default="t5-small",
+        default="t5-large",
     )
     parser.add_argument(
         "--prompt",

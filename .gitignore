@@ -3,6 +3,8 @@
 *.srt
 *.txt
 *.url
+*.npz
+*.json
 
 whisper/assets
 
