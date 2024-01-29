@@ -337,6 +337,7 @@ class Tokenizer:
             legacy=False,
             model_max_length=getattr(config, "n_positions", 512),
         )
+        print(self._tokenizer.eos_token_id)
 
     @property
     def eos_id(self) -> int:

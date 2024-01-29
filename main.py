@@ -6,7 +6,7 @@ import subprocess
 import os
 
 import whisper
-from t5 import t5
+import t5
 
 language_map = {
     "ja": "Japanese",
@@ -46,6 +46,7 @@ def argparser():
         default=None,
         help="The language of the subtitles. None if the subtitles should not be translated",
     )
+    # Note that some languages such as Japanese are not supported by FLAN-T5.
     parser.add_argument(
         "--local-translate",
         action='store_true',
