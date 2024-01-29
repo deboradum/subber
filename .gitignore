@@ -8,7 +8,7 @@
 
 whisper/assets
 
-*/__pycache__
+*__pycache__
 *DS_Store
 
 whisper-mlx-large
