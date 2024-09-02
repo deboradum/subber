@@ -15,7 +15,7 @@ language_map = {
 }
 
 def argparser():
-    parser = argparse.ArgumentParser(description="LoRA or QLoRA finetuning.")
+    parser = argparse.ArgumentParser(description="Transcribe and translate videos using MLX whisper and T5.")
     parser.add_argument(
         "--w-model",
         default="whisper-q-mlx-large",
@@ -38,7 +38,7 @@ def argparser():
         "--input-language",
         type=str,
         default="en",
-        help="The language of the input video",
+        help="The language of the input video. 'ja' for Japanese, 'en' for English, 'nl' for Dutch.",
     )
     parser.add_argument(
         "--output-language",
