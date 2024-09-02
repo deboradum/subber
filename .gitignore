@@ -15,3 +15,5 @@ whisper-mlx-large
 whisper-q-mlx-large
 whisper-q-mlx-medium
 whisper-q-mlx-small
+
+!requirements.txt
