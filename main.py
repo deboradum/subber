@@ -4,8 +4,8 @@ import argparse
 import json
 import subprocess
 import os
+import mlx_whisper
 
-import whisper
 import t5
 
 language_map = {
@@ -93,13 +93,17 @@ class Subber:
     def _transcribe(self):
         if os.path.exists(self.transcriptPath):
             print("Transcription file found.")
-            with open(self.transcriptPath, "r") as f:
+            with open(self.transcriptPath, "r", encoding="utf-8") as f:
                 self.transcription = json.load(f)
             return
         print("Transcribing.")
-        self.transcription = whisper.transcribe(self.inputFilePath, path_or_hf_repo=self.w_model)
-        with open(self.transcriptPath, "w+") as f:
-            json.dump(self.transcription, f)
+        self.transcription = mlx_whisper.transcribe(
+            self.inputFilePath,
+            path_or_hf_repo=self.w_model,
+            **{"language": self.inputLanguage, "task": "transcribe"}
+        )
+        with open(self.transcriptPath, "w", encoding="utf-8") as f:
+            json.dump(self.transcription, f, ensure_ascii=False, indent=2)
 
     def _translate(self):
         # If only subbing and no translation is needed
@@ -167,24 +171,19 @@ class Subber:
     def _burnSubtitles(self, output_video):
         print("Burning subtitles.")
         style = "Fontname=Roboto,OutlineColour=&H40000000,BorderStyle=3,ScaleY=0.87, ScaleX=0.87,Fontsize=15"
+        output_file = output_video or f"{self.outputLanguage}_{os.path.basename(self.inputFilePath)}"
         subprocess.run(
             [
                 "ffmpeg",
-                "-i",
-                self.inputFilePath,
-                "-vf",
-                f"subtitles='{self.subtitlePath}':force_style='{style}'",
-                "-c:v",
-                "libx264",
-                "-crf",
-                "18",
-                "-c:a",
-                "copy",
-                output_video if output_video else f"{self.outputLanguage}_{self.inputFilePath}",
-            ],
-            stdout = subprocess.DEVNULL,
-            stderr = subprocess.DEVNULL
+                "-i", self.inputFilePath,
+                "-vf", f"subtitles='{self.subtitlePath}':force_style='Fontname=Roboto,OutlineColour=&H40000000,BorderStyle=3,ScaleY=0.87,ScaleX=0.87,Fontsize=15'",
+                "-c:v", "libx264",
+                "-crf", "18",
+                "-c:a", "copy",
+                output_file
+            ]
         )
+
 
     def run(self):
         if not os.path.exists(self.subtitlePath):
