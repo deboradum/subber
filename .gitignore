@@ -6,8 +6,6 @@
 *.npz
 *.json
 
-whisper/assets
-
 *__pycache__
 *DS_Store
 
