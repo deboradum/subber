@@ -100,6 +100,7 @@ class Subber:
         self.transcription = mlx_whisper.transcribe(
             self.inputFilePath,
             path_or_hf_repo=self.w_model,
+            verbose=False,
             **{"language": self.inputLanguage, "task": "transcribe"}
         )
         with open(self.transcriptPath, "w", encoding="utf-8") as f:
