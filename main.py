@@ -1,4 +1,5 @@
 from deep_translator import GoogleTranslator
+from tqdm import tqdm
 
 import argparse
 import json
@@ -121,7 +122,7 @@ class Subber:
     # Translating using Google Translate api.
     def _translate_google(self):
         self.translatedSubs = []
-        for part in self.transcription["segments"]:
+        for part in tqdm(self.transcription["segments"]):
             translatedPart = {}
             translatedPart["start"] = part["start"]
             translatedPart["end"] = part["end"]
@@ -135,7 +136,7 @@ class Subber:
 
         inp_lang = language_map[self.inputLanguage]
         outp_lang = language_map[self.outputLanguage]
-        for part in self.transcription["segments"]:
+        for part in tqdm(self.transcription["segments"]):
             text = part["text"]
 
             # Run t5 inference.
@@ -181,6 +182,8 @@ class Subber:
         subprocess.run(
             [
                 "ffmpeg",
+                "-hide_banner",
+                "-loglevel", "error",
                 "-i", self.inputFilePath,
                 "-vf", f"subtitles='{self.subtitlePath}':force_style='Fontname=Roboto,OutlineColour=&H40000000,BorderStyle=3,ScaleY=0.87,ScaleX=0.87,Fontsize=15'",
                 "-c:v", "libx264",
