@@ -169,9 +169,14 @@ class Subber:
                 f.write(f"{text}\n\n")
 
     def _burnSubtitles(self, output_video):
+        input_dir = os.path.dirname(self.inputFilePath)
+        input_name = os.path.basename(self.inputFilePath)
+        output_file = os.path.join(input_dir, f"{self.outputLanguage}_{input_name}")
+        if os.path.exists(output_file):
+            print("Burned video found.")
+            return
+
         print("Burning subtitles.")
-        style = "Fontname=Roboto,OutlineColour=&H40000000,BorderStyle=3,ScaleY=0.87, ScaleX=0.87,Fontsize=15"
-        output_file = output_video or f"{self.outputLanguage}_{os.path.basename(self.inputFilePath)}"
         subprocess.run(
             [
                 "ffmpeg",
@@ -183,7 +188,6 @@ class Subber:
                 output_file
             ]
         )
-
 
     def run(self):
         if not os.path.exists(self.subtitlePath):
