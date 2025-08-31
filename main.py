@@ -183,6 +183,7 @@ class Subber:
             [
                 "ffmpeg",
                 "-hide_banner",
+                "-nostats",
                 "-loglevel", "error",
                 "-i", self.inputFilePath,
                 "-vf", f"subtitles='{self.subtitlePath}':force_style='Fontname=Roboto,OutlineColour=&H40000000,BorderStyle=3,ScaleY=0.87,ScaleX=0.87,Fontsize=15'",
